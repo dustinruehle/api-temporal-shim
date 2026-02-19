@@ -13,7 +13,7 @@ sequenceDiagram
 
     alt Temporal Mode (default)
         Client->>Temporal Cloud: Start workflow
-        Temporal Cloud->>Worker: Dispatch task
+        Worker->>Temporal Cloud: Poll for task
         Worker->>REST Service: POST /greet {name}
         REST Service-->>Worker: {message}
         Worker-->>Temporal Cloud: Workflow completed
