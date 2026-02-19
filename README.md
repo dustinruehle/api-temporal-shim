@@ -11,16 +11,20 @@ sequenceDiagram
     participant Worker
     participant REST Service
 
-    alt Temporal Mode (default)
-        Client->>Temporal Cloud: Start workflow
-        Worker->>Temporal Cloud: Poll for task
-        Worker->>REST Service: POST /greet {name}
-        REST Service-->>Worker: {message}
-        Worker-->>Temporal Cloud: Workflow completed
-        Temporal Cloud-->>Client: GreetingOutput
-    else Direct Mode (--mode direct)
-        Client->>REST Service: POST /greet {name}
-        REST Service-->>Client: {message}
+    rect rgb(191, 223, 255)
+    Note right of Client: Temporal Mode (default)
+    Client->>Temporal Cloud: Start workflow
+    Worker->>Temporal Cloud: Poll for task
+    Worker->>REST Service: POST /greet {name}
+    REST Service-->>Worker: {message}
+    Worker-->>Temporal Cloud: Workflow completed
+    Temporal Cloud-->>Client: GreetingOutput
+    end
+
+    rect rgb(200, 235, 200)
+    Note right of Client: Direct Mode (--mode direct)
+    Client->>REST Service: POST /greet {name}
+    REST Service-->>Client: {message}
     end
 ```
 
