@@ -4,87 +4,24 @@ A .NET 9.0 sample demonstrating a swappable Temporal layer. The client can eithe
 
 ## Architecture
 
-### Temporal Mode — Local (default)
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Temporal Dev Server
-    participant Worker
-    participant GreetingWorkflow
-    participant GreetingActivity
-    participant REST Service
-
-    Client->>Temporal Dev Server: Start workflow (greeting-{guid})
-    Temporal Dev Server->>Worker: Dispatch workflow task
-    Worker->>GreetingWorkflow: RunAsync(name)
-    GreetingWorkflow->>GreetingActivity: GreetAsync(name)
-    GreetingActivity->>REST Service: POST /greet {name}
-    REST Service-->>GreetingActivity: {message}
-    GreetingActivity-->>GreetingWorkflow: GreetingOutput
-    GreetingWorkflow-->>Worker: GreetingOutput
-    Worker-->>Temporal Dev Server: Workflow completed
-    Temporal Dev Server-->>Client: GreetingOutput
-```
-
-### Temporal Mode — Temporal Cloud (API Key)
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Regional Endpoint
-    participant Temporal Cloud
-    participant Worker
-    participant GreetingWorkflow
-    participant GreetingActivity
-    participant REST Service
-
-    Client->>Regional Endpoint: Start workflow [TLS + API key]
-    Regional Endpoint->>Temporal Cloud: Route to namespace
-    Temporal Cloud->>Worker: Dispatch workflow task [TLS]
-    Worker->>GreetingWorkflow: RunAsync(name)
-    GreetingWorkflow->>GreetingActivity: GreetAsync(name)
-    GreetingActivity->>REST Service: POST /greet {name}
-    REST Service-->>GreetingActivity: {message}
-    GreetingActivity-->>GreetingWorkflow: GreetingOutput
-    GreetingWorkflow-->>Worker: GreetingOutput
-    Worker-->>Temporal Cloud: Workflow completed
-    Temporal Cloud-->>Regional Endpoint: Result
-    Regional Endpoint-->>Client: GreetingOutput
-```
-
-### Temporal Mode — Temporal Cloud (mTLS)
-
 ```mermaid
 sequenceDiagram
     participant Client
     participant Temporal Cloud
     participant Worker
-    participant GreetingWorkflow
-    participant GreetingActivity
     participant REST Service
 
-    Client->>Temporal Cloud: Start workflow [mTLS]
-    Temporal Cloud->>Worker: Dispatch workflow task [mTLS]
-    Worker->>GreetingWorkflow: RunAsync(name)
-    GreetingWorkflow->>GreetingActivity: GreetAsync(name)
-    GreetingActivity->>REST Service: POST /greet {name}
-    REST Service-->>GreetingActivity: {message}
-    GreetingActivity-->>GreetingWorkflow: GreetingOutput
-    GreetingWorkflow-->>Worker: GreetingOutput
-    Worker-->>Temporal Cloud: Workflow completed
-    Temporal Cloud-->>Client: GreetingOutput
-```
-
-### Direct Mode
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant REST Service
-
-    Client->>REST Service: POST /greet {name}
-    REST Service-->>Client: {message}
+    alt Temporal Mode (default)
+        Client->>Temporal Cloud: Start workflow
+        Temporal Cloud->>Worker: Dispatch task
+        Worker->>REST Service: POST /greet {name}
+        REST Service-->>Worker: {message}
+        Worker-->>Temporal Cloud: Workflow completed
+        Temporal Cloud-->>Client: GreetingOutput
+    else Direct Mode (--mode direct)
+        Client->>REST Service: POST /greet {name}
+        REST Service-->>Client: {message}
+    end
 ```
 
 ## Prerequisites
