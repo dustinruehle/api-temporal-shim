@@ -152,6 +152,56 @@ Once configured, the steps are the same as local development — just skip start
    dotnet run --project src/TemporalGreeting.Client -- "Alice"
    ```
 
+## Design Decisions
+
+This sample switches modes via a CLI flag (`--mode temporal|direct`). In a real system, the toggle mechanism is itself a design decision. Below are four approaches at increasing flexibility, along with cross-cutting concerns that apply to all of them.
+
+### Approach 1: Deploy-Time Config
+
+The mode is set in `appsettings.json` or an environment variable. Switching requires a restart.
+
+| Decision | Options |
+|---|---|
+| Config source | `appsettings.json` value, environment variable, or both with env var override |
+| Restart strategy | Full redeploy vs. rolling restart vs. ConfigMap change + pod restart |
+
+### Approach 2: Runtime Config Reload
+
+Convert the Client to a long-running service. Use `IOptionsMonitor<T>` to hot-reload the mode without restarting.
+
+| Decision | Options |
+|---|---|
+| Toggle granularity | Global toggle (all requests go one way) vs. per-request override |
+| DI registration | Scoped `IGreetingClient` resolved per-request from current config vs. swap a singleton reference |
+| Graceful switchover | Drain in-flight Temporal workflows before switching vs. let existing workflows complete while new requests go direct |
+
+### Approach 3: Feature Flag Service
+
+Query an external feature flag system (LaunchDarkly, Azure App Config, etc.) on each request.
+
+| Decision | Options |
+|---|---|
+| Rollout strategy | All-or-nothing toggle vs. percentage-based vs. user/tenant-based routing |
+| Fallback behavior | Default to Temporal if flag service is unreachable vs. default to Direct vs. fail closed |
+
+### Approach 4: Per-Request Routing
+
+The caller passes the desired mode on each request (e.g., `X-Execution-Mode: direct` header or `?mode=direct` query param).
+
+| Decision | Options |
+|---|---|
+| Signal mechanism | HTTP header vs. query parameter vs. request body field |
+| Default mode | Always Temporal (safest) vs. configurable default with per-request override |
+
+### Cross-Cutting Concerns
+
+| Concern | Consideration |
+|---|---|
+| Worker lifecycle | If you toggle to 100% Direct, do you stop the Worker or leave it running idle? |
+| Observability | How do you know which mode handled a given request — logging, metrics, trace labels? |
+| Failure mode | If Temporal is down and mode is "temporal", auto-fallback to Direct or fail? |
+| Testing | How do you exercise both paths in CI? |
+
 ## Project Structure
 
 ```
